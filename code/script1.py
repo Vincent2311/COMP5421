@@ -1,22 +1,19 @@
-from alignChannels import alignChannels
-import numpy as np
-from PIL import Image
 # Problem 1: Image Alignment
-
+import numpy as np
+from alignChannels import alignChannels
+from PIL import Image
+import os
 # 1. Load images (all 3 channels)
-red = np.load('data/red.npy')
-green = np.load('data/green.npy')
-blue = np.load('data/blue.npy')
+red = np.load('../data/red.npy')
+green = np.load('../data/green.npy')
+blue = np.load('../data/blue.npy')
+
+height, width= red.shape
 
 # 2. Find best alignment
-rgbResult = alignChannels(red, green, blue)
+output= alignChannels(red, green, blue)
 
-# 3. save result to rgb_output.jpg (IN THE "results" FOLDER)
-rgbResult = Image.fromarray(rgbResult, 'RGB')
-rgbResult.save("results/rgb_output.jpg")
-
-
-
-# test
-
-#
+rgbResult = Image.fromarray(output, 'RGB')
+if not os.path.exists("../results"):
+    os.makedirs("../results")
+rgbResult.save("../results/rgb_output.jpg")
