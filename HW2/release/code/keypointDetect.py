@@ -64,6 +64,14 @@ def computePrincipalCurvature(DoG_pyramid):
     ##################
     # TO DO ...
     # Compute principal curvature here
+    D_xx = cv2.Sobel(DoG_pyramid,ddepth=-1,dx=2,dy=0,ksize=3)
+    D_yy = cv2.Sobel(DoG_pyramid,ddepth=-1,dx=0,dy=2,ksize=3)
+    D_xy = cv2.Sobel(DoG_pyramid,ddepth=-1,dx=1,dy=1,ksize=3)
+
+    principal_curvature = np.empty_like(DoG_pyramid)
+    trace = D_xx + D_yy
+    det = D_xx*D_yy - D_xy**2
+    principal_curvature = trace**2/det
     return principal_curvature
 
 def getLocalExtrema(DoG_pyramid, DoG_levels, principal_curvature,
@@ -89,8 +97,50 @@ def getLocalExtrema(DoG_pyramid, DoG_levels, principal_curvature,
     ##############
     #  TO DO ...
     # Compute locsDoG here
+    X = []; Y = []; Z = []
+    for level in DoG_levels:
+        stacked = np.dstack((DoG_pyramid[1:-1, 1:-1, level],
+                             DoG_pyramid[1:-1, :-2, level],
+                             DoG_pyramid[:-2, 1:-1, level],
+                             DoG_pyramid[1:-1, 2:, level],
+                             DoG_pyramid[2:, 1:-1, level],
+                             DoG_pyramid[:-2, 2:, level],
+                             DoG_pyramid[2:, :-2, level],
+                             DoG_pyramid[2:, 2:, level],
+                             DoG_pyramid[:-2, :-2, level]))
+        # if first level only add upper layer neighbor comparison
+        if level == DoG_levels[0]:
+            stacked = np.dstack((stacked, DoG_pyramid[1:-1, 1:-1, level+1]))
+        # if last level only add the lower layer neighbor comparison
+        elif level == DoG_levels[-1]:
+            stacked = np.dstack((stacked, DoG_pyramid[1:-1, 1:-1, level-1]))
+        else:
+            stacked = np.dstack((stacked, DoG_pyramid[1:-1, 1:-1, level-1],
+                                          DoG_pyramid[1:-1, 1:-1, level+1]))
+
+        # find max and min
+        max_stacked = np.amax(stacked, axis = 2)
+        min_stacked = np.amin(stacked, axis = 2)
+        # if pixel in question is min or max
+        keypoint_matrix_max = np.where(DoG_pyramid[1:-1, 1:-1, level] == max_stacked,
+                                        DoG_pyramid[1:-1, 1:-1, level], 0)
+        keypoint_matrix_min = np.where(DoG_pyramid[1:-1, 1:-1, level] == min_stacked,
+                                        DoG_pyramid[1:-1, 1:-1, level], 0)
+        # as max and min of the same elements are mutually exclusive unless all elements are same
+        keypoint_matrix = keypoint_matrix_max + keypoint_matrix_min
+
+        # vet the points if they don't conform to the thresholds
+        keypoint_matrix = np.where(keypoint_matrix > th_contrast, keypoint_matrix, 0)
+        keypoint_matrix = np.where(principal_curvature[1:-1, 1:-1, level] < th_r, keypoint_matrix, 0)
+
+        # get coordinates of all non-zero elements
+        x, y = np.nonzero(keypoint_matrix)
+        z = np.full(len(x), level)
+        X.extend(x+1); Y.extend(y+1); Z.extend(z)
+
+    locsDoG = np.stack([np.asarray(Y), np.asarray(X), np.asarray(Z)], axis = -1)
     return locsDoG
-    
+   
 
 def DoGdetector(im, sigma0=1, k=np.sqrt(2), levels=[-1,0,1,2,3,4], 
                 th_contrast=0.03, th_r=12):
@@ -122,6 +172,10 @@ def DoGdetector(im, sigma0=1, k=np.sqrt(2), levels=[-1,0,1,2,3,4],
     ##########################
     # TO DO ....
     # compupte gauss_pyramid, gauss_pyramid here
+    gauss_pyramid = createGaussianPyramid(im,sigma0,k,levels)
+    DoG_pyramid,DoG_levels = createDoGPyramid(gauss_pyramid,levels)
+    principal_curvature = computePrincipalCurvature(DoG_pyramid)
+    locsDoG = getLocalExtrema(DoG_pyramid,DoG_levels,principal_curvature,th_contrast,th_r)
     return locsDoG, gauss_pyramid
 
 
@@ -139,14 +193,24 @@ if __name__ == '__main__':
     # test DoG pyramid
     DoG_pyr, DoG_levels = createDoGPyramid(im_pyr, levels)
     displayPyramid(DoG_pyr)
-    # # test compute principal curvature
-    # pc_curvature = computePrincipalCurvature(DoG_pyr)
-    # # displayPyramid(pc_curvature)
-    # # test get local extrema
-    # th_contrast = 0.03
-    # th_r = 12
-    # locsDoG = getLocalExtrema(DoG_pyr, DoG_levels, pc_curvature, th_contrast, th_r)
-    # # test DoG detector
-    # locsDoG, gaussian_pyramid = DoGdetector(im)
+    # test compute principal curvature
+    pc_curvature = computePrincipalCurvature(DoG_pyr)
+    #displayPyramid(pc_curvature)
+    # test get local extrema
+    th_contrast = 0.03
+    th_r = 12
+    locsDoG = getLocalExtrema(DoG_pyr, DoG_levels, pc_curvature, th_contrast, th_r)
+    # test DoG detector
+    locsDoG, gaussian_pyramid = DoGdetector(im)
+    position = []
+    for point in locsDoG:
+        position.append((int(point[0]),int(point[1])))
+    position = np.array(position)
+    cv_kpts1 = [cv2.KeyPoint(int(position[i][0]), int(position[i][1]), 1)
+                        for i in range(position.shape[0])]
+    output = np.copy(im)
+    cv2.drawKeypoints(im,cv_kpts1,output,(0,255,0),cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    cv2.imwrite('../results/detected_keypoints.jpg', output)
+
 
 
