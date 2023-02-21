@@ -108,32 +108,25 @@ def getLocalExtrema(DoG_pyramid, DoG_levels, principal_curvature,
                              DoG_pyramid[2:, :-2, level],
                              DoG_pyramid[2:, 2:, level],
                              DoG_pyramid[:-2, :-2, level]))
-        # if first level only add upper layer neighbor comparison
         if level == DoG_levels[0]:
             stacked = np.dstack((stacked, DoG_pyramid[1:-1, 1:-1, level+1]))
-        # if last level only add the lower layer neighbor comparison
         elif level == DoG_levels[-1]:
             stacked = np.dstack((stacked, DoG_pyramid[1:-1, 1:-1, level-1]))
         else:
             stacked = np.dstack((stacked, DoG_pyramid[1:-1, 1:-1, level-1],
                                           DoG_pyramid[1:-1, 1:-1, level+1]))
 
-        # find max and min
         max_stacked = np.amax(stacked, axis = 2)
         min_stacked = np.amin(stacked, axis = 2)
-        # if pixel in question is min or max
         keypoint_matrix_max = np.where(DoG_pyramid[1:-1, 1:-1, level] == max_stacked,
                                         DoG_pyramid[1:-1, 1:-1, level], 0)
         keypoint_matrix_min = np.where(DoG_pyramid[1:-1, 1:-1, level] == min_stacked,
                                         DoG_pyramid[1:-1, 1:-1, level], 0)
-        # as max and min of the same elements are mutually exclusive unless all elements are same
         keypoint_matrix = keypoint_matrix_max + keypoint_matrix_min
 
-        # vet the points if they don't conform to the thresholds
         keypoint_matrix = np.where(keypoint_matrix > th_contrast, keypoint_matrix, 0)
         keypoint_matrix = np.where(principal_curvature[1:-1, 1:-1, level] < th_r, keypoint_matrix, 0)
 
-        # get coordinates of all non-zero elements
         x, y = np.nonzero(keypoint_matrix)
         z = np.full(len(x), level)
         X.extend(x+1); Y.extend(y+1); Z.extend(z)

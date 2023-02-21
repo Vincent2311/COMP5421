@@ -24,11 +24,9 @@ def makeTestPattern(patch_width=9, nbits=256):
     #############################
     # TO DO ...
     # Generate testpattern here
-    compareX = np.random.normal(0,1/5*patch_width, size=(nbits,)).round().astype(int)
-    compareY = np.random.normal(0,1/5*patch_width, size=(nbits,)).round().astype(int)
-    compareX = compareX + patch_width//2 +1
-    compareY = compareY + patch_width//2 +1
-    return  compareX, compareY
+    compareX = np.random.randint(patch_width*patch_width, size=(nbits,))
+    compareY = np.random.randint(patch_width*patch_width, size=(nbits,))
+    return compareX, compareY
 
 # load test pattern for Brief
 test_pattern_file = '../results/testPattern.npy'
@@ -78,11 +76,11 @@ def computeBrief(im, gaussian_pyramid, locsDoG, k, levels,
     
     
     for i in range(0,len(locs)):
-        descriptors = np.zeros_like(compareX)
+        descriptors = np.empty_like(compareX)
         point = locs[i]
         compare_x = np.unravel_index(compareX, (patchWidth, patchWidth))
         compare_y = np.unravel_index(compareY, (patchWidth, patchWidth))
-        descriptors = np.where(im[point[1]+compare_x[0]-patchWidth//2-1,point[0]+compare_x[1]-patchWidth//2-1] < im[point[1]+compare_y[0]-patchWidth//2-1,point[0]+compare_y[1]-patchWidth//2-1],1,0)
+        descriptors = np.where(im[point[1]+compare_x[0]-1-patchWidth//2,point[0]+compare_x[1]-1-patchWidth//2] < im[point[1]+compare_y[0]-1-patchWidth//2,point[0]+compare_y[1]-1-patchWidth//2],1,0)
         desc.append(descriptors)
     locs = np.array(locs)
     desc = np.array(desc)
@@ -172,8 +170,8 @@ if __name__ == '__main__':
     plt.waitforbuttonpress(0)
     plt.close(fig)
     # test matches
-    im1 = cv2.imread('../data/model_chickenbroth.jpg')
-    im2 = cv2.imread('../data/chickenbroth_01.jpg')
+    im1 = cv2.imread('../data/chickenbroth_01.jpg')
+    im2 = cv2.imread('../data/chickenbroth_03.jpg')
     locs1, desc1 = briefLite(im1)
     locs2, desc2 = briefLite(im2)
     matches = briefMatch(desc1, desc2)
