@@ -15,6 +15,7 @@ def computeH(p1, p2):
     assert(p1.shape[0]==2)
     #############################
     # TO DO ...
+    
     return H2to1
 
 def ransacH(matches, locs1, locs2, num_iter=5000, tol=2):

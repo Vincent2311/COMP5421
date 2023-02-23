@@ -24,8 +24,19 @@ def makeTestPattern(patch_width=9, nbits=256):
     #############################
     # TO DO ...
     # Generate testpattern here
-    compareX = np.random.randint(patch_width*patch_width, size=(nbits,))
-    compareY = np.random.randint(patch_width*patch_width, size=(nbits,))
+    x = np.random.normal(0, 1/5*patch_width, (nbits, 2)).round().astype(int)
+    y = np.random.normal(0, 1/5*patch_width, (nbits, 2)).round().astype(int)
+    compareX = y[:, 0]*patch_width + x[:, 0] + (patch_width//2)*(patch_width+1)
+    compareY = y[:, 1]*patch_width + x[:, 1] + (patch_width//2)*(patch_width+1)
+
+    while np.min(compareX) < 0 or np.max(compareX) >= patch_width**2:
+        ind = np.where(compareX < 0) + np.where(compareX >= patch_width**2)
+        for i in ind:
+            compareX[i] = int(round(np.random.normal(0, 1/5*patch_width)))
+    while np.min(compareY) < 0 or np.max(compareY) >= patch_width**2:
+        ind = np.where(compareY < 0) + np.where(compareY >= patch_width**2)
+        for i in ind:
+            compareY[i] = int(round(np.random.normal(0, 1/5*patch_width)))
     return compareX, compareY
 
 # load test pattern for Brief
@@ -162,17 +173,43 @@ if __name__ == '__main__':
     compareX, compareY = makeTestPattern()
     # test briefLite
     im = cv2.imread('../data/model_chickenbroth.jpg')
-    locs, desc = briefLite(im)  
+    locs, desc = briefLite(im)
     fig = plt.figure()
     plt.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY), cmap='gray')
     plt.plot(locs[:,0], locs[:,1], 'r.')
     plt.draw()
     plt.waitforbuttonpress(0)
     plt.close(fig)
+
     # test matches
-    im1 = cv2.imread('../data/chickenbroth_01.jpg')
-    im2 = cv2.imread('../data/chickenbroth_03.jpg')
+    im1 = cv2.imread('../data/model_chickenbroth.jpg')
+    img_names = ['../data/chickenbroth_01.jpg', '../data/chickenbroth_02.jpg',
+                 '../data/chickenbroth_03.jpg', '../data/chickenbroth_04.jpg',
+                 '../data/chickenbroth_05.jpg']
+    for img_name in img_names:
+        im2 = cv2.imread(img_name)
+        locs1, desc1 = briefLite(im1)
+        locs2, desc2 = briefLite(im2)
+        matches = briefMatch(desc1, desc2)
+        plotMatches(im1,im2,matches,locs1,locs2)
+
+    # test matches for incline image
+    im1 = cv2.imread('../data/incline_L.png')
+    im2 = cv2.imread('../data/incline_R.png')
     locs1, desc1 = briefLite(im1)
     locs2, desc2 = briefLite(im2)
     matches = briefMatch(desc1, desc2)
-    plotMatches(im1,im2,matches,locs1,locs2)
+    plotMatches(im1, im2, matches, locs1, locs2)
+
+    # test matches for textbook cover page
+    im1 = cv2.imread('../data/pf_scan_scaled.jpg')
+    locs1, desc1 = briefLite(im1)
+    img_names = ['../data/pf_desk.jpg', '../data/pf_floor_rot.jpg',
+                 '../data/pf_floor.jpg', '../data/pf_pile.jpg',
+                 '../data/pf_stand.jpg']
+    for img_name in img_names:
+        im2 = cv2.imread(img_name)
+        locs2, desc2 = briefLite(im2)
+        matches = briefMatch(desc1, desc2)
+        plotMatches(im1, im2, matches, locs1, locs2)
+
