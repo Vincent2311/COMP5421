@@ -28,15 +28,9 @@ def makeTestPattern(patch_width=9, nbits=256):
     y = np.random.normal(0, 1/5*patch_width, (nbits, 2)).round().astype(int)
     compareX = y[:, 0]*patch_width + x[:, 0] + (patch_width//2)*(patch_width+1)
     compareY = y[:, 1]*patch_width + x[:, 1] + (patch_width//2)*(patch_width+1)
-
-    while np.min(compareX) < 0 or np.max(compareX) >= patch_width**2:
-        ind = np.where(compareX < 0) + np.where(compareX >= patch_width**2)
-        for i in ind:
-            compareX[i] = int(round(np.random.normal(0, 1/5*patch_width)))
-    while np.min(compareY) < 0 or np.max(compareY) >= patch_width**2:
-        ind = np.where(compareY < 0) + np.where(compareY >= patch_width**2)
-        for i in ind:
-            compareY[i] = int(round(np.random.normal(0, 1/5*patch_width)))
+    compareX = np.clip(compareX,0,patch_width**2-1)
+    compareY = np.clip(compareY,0,patch_width**2-1)
+    
     return compareX, compareY
 
 # load test pattern for Brief

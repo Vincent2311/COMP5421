@@ -15,7 +15,23 @@ def computeH(p1, p2):
     assert(p1.shape[0]==2)
     #############################
     # TO DO ...
-    
+    p2_hmg = np.stack((p2[0], p2[1], np.ones(p2.shape[1])), axis = 1)
+
+    first = np.empty((2*p2.shape[0],3))
+    first[0::2] = -p2_hmg
+    first[1::2] = 0
+
+    second = np.empty((2*p2.shape[0],3))
+    second[0::2] = 0
+    second[1::2] = -p2_hmg
+
+    third = np.empty((2*p2.shape[0],3))
+    third[0::2] = p2_hmg*(np.transpose([p1[0]]))
+    third[1::2] = p2_hmg*(np.transpose([p1[1]]))
+
+    a_matrix = np.hstack((first, second, third))
+    _, _, vh = np.linalg.svd(a_matrix)
+    H2to1 = vh[-1, :].reshape((3, 3))
     return H2to1
 
 def ransacH(matches, locs1, locs2, num_iter=5000, tol=2):
