@@ -18,6 +18,14 @@ def imageStitching(im1, im2, H2to1):
     '''
     #######################################
     # TO DO ...
+    size = (3*im1.shape[0],im1.shape[1])
+    pano_im = np.zeros(size)
+    pano_im = cv2.warpPerspective(im1, np.identity(3), size)
+    pano_im = np.maximum(pano_im,cv2.warpPerspective(im2, H2to1, size))
+
+    # save the image and matrix
+    np.save('../results/q6_1.npy',H2to1)
+    cv2.imwrite('../results/6_1.jpg', pano_im)
     return pano_im
 
 
@@ -28,8 +36,29 @@ def imageStitching_noClip(im1, im2, H2to1):
     ''' 
     ######################################
     # TO DO ...
+
     return pano_im
 
+def generatePanorama(im1, im2):
+    '''
+    Generate and save panorama of im1 and im2.
+    INPUT
+        im1 and im2 - two images for stitching
+    OUTPUT
+        Blends img1 and warped img2 (with no clipping)
+        and saves the panorama image.
+    '''
+
+    ######################################
+    # TO DO ...
+    locs1, desc1 = briefLite(im1)
+    locs2, desc2 = briefLite(im2)
+    matches = briefMatch(desc1, desc2)
+    H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
+    pano_im = imageStitching_noClip(im1, im2, H2to1)
+    cv2.imshow("panoramas", pano_im)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     im1 = cv2.imread('../data/incline_L.png')
@@ -41,7 +70,7 @@ if __name__ == '__main__':
     # plotMatches(im1,im2,matches,locs1,locs2)
     H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
     pano_im = imageStitching_noClip(im1, im2, H2to1)
-    print(H2to1)
+    # pano_im = imageStitching(im1, im2, H2to1)
     cv2.imwrite('../results/panoImg.png', pano_im)
     cv2.imshow('panoramas', pano_im)
     cv2.waitKey(0)
