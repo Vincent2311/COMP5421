@@ -66,7 +66,7 @@ def ransacH(matches, locs1, locs2, num_iter=5000, tol=2):
         proj_locs2 = np.dot(H,np.transpose(p2_hmg))
         proj_locs2 = proj_locs2/proj_locs2[2,:] 
 
-        loss = np.sum((np.transpose(p1_hmg) - proj_locs2) ** 2, axis=1) ** 0.5
+        loss = np.sum((np.transpose(p1_hmg) - proj_locs2) ** 2, axis=0) ** 0.5
         inliers = len(loss[loss <= tol])
         if inliers > max_inlier:
             max_inlier = inliers
