@@ -17,15 +17,15 @@ def computeH(p1, p2):
     # TO DO ...
     p2_hmg = np.stack((p2[0], p2[1], np.ones(p2.shape[1])), axis = 1)
 
-    first = np.empty((2*p2.shape[0],3))
+    first = np.empty((2*p2_hmg.shape[0],3))
     first[0::2] = -p2_hmg
     first[1::2] = 0
 
-    second = np.empty((2*p2.shape[0],3))
+    second = np.empty((2*p2_hmg.shape[0],3))
     second[0::2] = 0
     second[1::2] = -p2_hmg
 
-    third = np.empty((2*p2.shape[0],3))
+    third = np.empty((2*p2_hmg.shape[0],3))
     third[0::2] = p2_hmg*(np.transpose([p1[0]]))
     third[1::2] = p2_hmg*(np.transpose([p1[1]]))
 
@@ -49,6 +49,29 @@ def ransacH(matches, locs1, locs2, num_iter=5000, tol=2):
     ''' 
     ###########################
     # TO DO ...
+    max_inlier = 0
+    bestH = np.empty((3,3))
+    p1 = locs1[matches[:,0]]
+    p2 = locs2[matches[:,1]]
+    p1 = np.delete(p1, 2, 1) 
+    p2 = np.delete(p2, 2, 1) 
+    for _ in range(0,num_iter):
+        sampled = np.random.randint(p1.shape[0], size=4)
+        H = computeH(np.transpose(p1[sampled]),np.transpose(p2[sampled]))
+        
+        p1_hmg = np.ones((p1.shape[0],3))
+        p1_hmg[:,:-1] = p1
+        p2_hmg = np.ones((p2.shape[0],3))
+        p2_hmg[:,:-1] = p2
+        proj_locs2 = np.dot(H,np.transpose(p2_hmg))
+        proj_locs2 = proj_locs2/proj_locs2[2,:] 
+
+        loss = np.sum((np.transpose(p1_hmg) - proj_locs2) ** 2, axis=1) ** 0.5
+        inliers = len(loss[loss <= tol])
+        if inliers > max_inlier:
+            max_inlier = inliers
+            bestH = H
+
     return bestH
         
     
