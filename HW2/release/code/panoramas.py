@@ -4,6 +4,16 @@ from scipy.ndimage.morphology import distance_transform_edt
 from planarH import ransacH
 from BRIEF import briefLite,briefMatch,plotMatches
 
+def blendMask(im):
+    mask = np.zeros_like(im)
+    mask[0,:] = 1
+    mask[-1,:] = 1
+    mask[:,0] = 1
+    mask[:,-1] = 1
+    mask = distance_transform_edt(1-mask)
+    mask = mask/np.amax(mask)
+    return mask
+
 def imageStitching(im1, im2, H2to1):
     '''
     Returns a panorama of im1 and im2 using the given 
@@ -19,8 +29,22 @@ def imageStitching(im1, im2, H2to1):
     #######################################
     # TO DO ...
     size = (3*im1.shape[0],im1.shape[1]//5*4)
-    pano_im = cv2.warpPerspective(im1, np.identity(3), size)
-    pano_im = np.maximum(pano_im,cv2.warpPerspective(im2, H2to1, size))
+    warp_im1 = cv2.warpPerspective(im1, np.identity(3), size)
+    mask1 = blendMask(im1)
+    mask1 = cv2.warpPerspective(mask1, np.identity(3), size)
+
+    mask2 = blendMask(im2)
+    mask2 = cv2.warpPerspective(mask2,H2to1 , size)
+    warp_im2 = cv2.warpPerspective(im2, H2to1, size)
+    
+    mask_sum = mask1 + mask2
+    mask1 = mask1/mask_sum
+    mask2 = mask2/mask_sum
+    mask1 = np.where(mask1 == np.nan, 0, mask1)
+    mask2 = np.where(mask2 == np.nan, 0, mask2)
+    
+    pano_im = np.uint8(np.multiply(warp_im1, mask1) + np.multiply(warp_im2, mask2))
+
 
     # save the image and matrix
     np.save('../results/q6_1.npy',H2to1)
@@ -52,8 +76,19 @@ def imageStitching_noClip(im1, im2, H2to1):
     M =np.array([[r,0,-r*x_min],[0,r,-r*y_min],[0,0,1]])
     warp_im1 = cv2.warpPerspective(im1, M, out_size)
     warp_im2 = cv2.warpPerspective(im2, np.matmul(M,H2to1), out_size)
-    pano_im = np.maximum(warp_im1,warp_im2)
+    mask1 = blendMask(im1)
+    mask1 = cv2.warpPerspective(mask1, M, out_size)
 
+    mask2 = blendMask(im2)
+    mask2 = cv2.warpPerspective(mask2, np.matmul(M, H2to1), out_size)
+
+    mask_sum = mask1 + mask2
+    mask1 = mask1/mask_sum
+    mask2 = mask2/mask_sum
+    mask1 = np.where(mask1 == np.nan, 0, mask1)
+    mask2 = np.where(mask2 == np.nan, 0, mask2)
+
+    pano_im = np.uint8(np.multiply(warp_im1, mask1) + np.multiply(warp_im2, mask2))
     cv2.imwrite('../results/q6_2 pan.jpg', pano_im)
     return pano_im
 
@@ -86,8 +121,8 @@ if __name__ == '__main__':
     # matches = briefMatch(desc1, desc2)
     # # plotMatches(im1,im2,matches,locs1,locs2)
     # H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
-    # pano_im = imageStitching_noClip(im1, im2, H2to1)
-    # #pano_im = imageStitching(im1, im2, H2to1)
+    # #pano_im = imageStitching_noClip(im1, im2, H2to1)
+    # pano_im = imageStitching(im1, im2, H2to1)
     # cv2.imwrite('../results/panoImg.png', pano_im)
     # cv2.imshow('panoramas', pano_im)
     # cv2.waitKey(0)
