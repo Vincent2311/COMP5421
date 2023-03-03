@@ -43,12 +43,12 @@ if __name__ == "__main__":
     
     W = np.loadtxt('../data/sphere.txt')
    
-    o_coord_2d = [800, 1400, 1] 
-    o_coord_3d = np.matmul(np.linalg.inv(H), o_coord_2d)
-    o_coord_3d = o_coord_3d/o_coord_3d[2]
-    o_coord_3d[2] = 6.8581/2 
-    W[0] = W[0] + o_coord_3d[0]
-    W[1] = W[1] + o_coord_3d[1]
+    coord_2d = [800, 1400, 1] 
+    coord_3d = np.matmul(np.linalg.inv(H), coord_2d)
+    coord_3d = coord_3d/coord_3d[2]
+    coord_3d[2] = 6.8581/2 
+    W[0] = W[0] + coord_3d[0]
+    W[1] = W[1] + coord_3d[1]
     W = np.vstack((W, np.ones((1, len(W[0])))))
     X = project_extrinsics(K, W, R, t)
     X = X.astype(int)

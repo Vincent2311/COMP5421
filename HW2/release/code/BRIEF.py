@@ -176,18 +176,14 @@ if __name__ == '__main__':
     plt.close(fig)
 
     # test matches
-    im1 = cv2.imread('../data/model_chickenbroth.jpg')
-    img_names = ['../data/chickenbroth_01.jpg', '../data/chickenbroth_02.jpg',
-                 '../data/chickenbroth_03.jpg', '../data/chickenbroth_04.jpg',
-                 '../data/chickenbroth_05.jpg']
-    for img_name in img_names:
-        im2 = cv2.imread(img_name)
-        locs1, desc1 = briefLite(im1)
-        locs2, desc2 = briefLite(im2)
-        matches = briefMatch(desc1, desc2)
-        plotMatches(im1,im2,matches,locs1,locs2)
+    im1 = cv2.imread('../data/chickenbroth_01.jpg')
+    im2 = cv2.imread('../data/chickenbroth_03.jpg')
+    locs1, desc1 = briefLite(im1)
+    locs2, desc2 = briefLite(im2)
+    matches = briefMatch(desc1, desc2)
+    plotMatches(im1,im2,matches,locs1,locs2)
 
-    # test matches for incline image
+    # # test matches for incline image
     im1 = cv2.imread('../data/incline_L.png')
     im2 = cv2.imread('../data/incline_R.png')
     locs1, desc1 = briefLite(im1)

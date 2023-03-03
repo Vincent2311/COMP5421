@@ -47,7 +47,7 @@ def imageStitching(im1, im2, H2to1):
 
 
     # save the image and matrix
-    np.save('../results/q6_1.npy',H2to1)
+    np.save('../results/6_1.npy',H2to1)
     cv2.imwrite('../results/6_1.jpg', pano_im)
     return pano_im
 
@@ -115,15 +115,15 @@ if __name__ == '__main__':
     im1 = cv2.imread('../data/incline_L.png')
     im2 = cv2.imread('../data/incline_R.png')
     generatePanorama(im1,im2)
-    # print(im1.shape)
-    # locs1, desc1 = briefLite(im1)
-    # locs2, desc2 = briefLite(im2)
-    # matches = briefMatch(desc1, desc2)
-    # # plotMatches(im1,im2,matches,locs1,locs2)
-    # H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
-    # #pano_im = imageStitching_noClip(im1, im2, H2to1)
-    # pano_im = imageStitching(im1, im2, H2to1)
-    # cv2.imwrite('../results/panoImg.png', pano_im)
-    # cv2.imshow('panoramas', pano_im)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    print(im1.shape)
+    locs1, desc1 = briefLite(im1)
+    locs2, desc2 = briefLite(im2)
+    matches = briefMatch(desc1, desc2)
+    # plotMatches(im1,im2,matches,locs1,locs2)
+    H2to1 = ransacH(matches, locs1, locs2, num_iter=5000, tol=2)
+    #pano_im = imageStitching_noClip(im1, im2, H2to1)
+    pano_im = imageStitching(im1, im2, H2to1)
+    cv2.imwrite('../results/panoImg.png', pano_im)
+    cv2.imshow('panoramas', pano_im)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
