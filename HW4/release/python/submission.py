@@ -103,10 +103,11 @@ def triangulate(C1, pts1, C2, pts2):
     for i in range(0,pts1.shape[0]):
         A[0,:] = np.reshape(c1_1 - c1_3 * pts1[i][0],(4,))
         A[1,:] = np.reshape(c1_2 - c1_3 * pts1[i][1],(4,))
-        A[0,:] = np.reshape(c2_1 - c2_3 * pts2[i][1],(4,))
-        A[1,:] = np.reshape(c2_2 - c2_3 * pts2[i][1],(4,))
+        A[2,:] = np.reshape(c2_1 - c2_3 * pts2[i][0],(4,))
+        A[3,:] = np.reshape(c2_2 - c2_3 * pts2[i][1],(4,))
         u, s, vh = np.linalg.svd(A)
         P[i] = vh[-1,:].reshape(1,4)
+        P[i] = P[i] / P[i,-1]
 
     proj_p1 = (C1 @ P.T).T
     proj_p2 = (C2 @ P.T).T
