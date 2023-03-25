@@ -7,6 +7,7 @@ Replace 'pass' by your implementation.
 import numpy as np
 import helper
 import matplotlib.pyplot as plt
+from scipy import signal
 
 '''
 Q2.1: Eight Point Algorithm
@@ -133,7 +134,33 @@ Q4.1: 3D visualization of the temple images.
 '''
 def epipolarCorrespondence(im1, im2, F, x1, y1):
     # Replace pass by your implementation
-    pass
+    left_point = np.array([x1,y1,1])
+    epi_line = F @ left_point.T
+    window_size = 31
+    offset = window_size//2
+    std = 7
+    window = signal.windows.gaussian(window_size**2, std)
+    patch_im1 = im1[y1-offset: y1+offset+1,x1-offset: x1+offset+1]
+
+    y2 = np.arrange(y1-window_size,y1 + window_size)
+    x2 = np.round((-epi_line[2] - epi_line[0] * y2)/epi_line[1]).astype(int)
+    mask = x2 - offset > 0 and x2 + offset <im2.shape[1] and y2 - offset > 0 and y2 + offset <im2.shape[0]
+    y2 = y2[mask]
+    x2 = x2[mask]
+    min_dist = float('inf')
+    best_x2 = None
+    best_y2 = None
+    for i in range(len(y2)):
+        y2 = y2[i]
+        x2 = x2[i]
+        patch_im2 = im2[y2-offset: y2+offset+1,x2-offset: x2+offset+1]
+        dist = np.sum(np.square(patch_im2 - patch_im1) * window)
+        if dist < min_dist:
+            min_dist = dist
+            best_x2 = x2
+            best_y2 = y2
+   
+    return best_x2, best_y2
 
 '''
 Q5.1: RANSAC method.

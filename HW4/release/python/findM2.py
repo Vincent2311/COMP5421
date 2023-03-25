@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import submission as sub
 import helper
-import submission as sub
 intrinsics = np.load('../data/intrinsics.npz')
 data = np.load('../data/some_corresp.npz')
 im1 = plt.imread('../data/im1.png')
