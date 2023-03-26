@@ -118,9 +118,10 @@ def epipolarMatchGUI(I1, I2, F):
     ax2.set_title('Verify that the corresponding point \n is on the epipolar line in this image')
     ax2.set_axis_off()
 
-    while True:
-        plt.sca(ax1)
-        x, y = plt.ginput(1, mouse_stop=2)[0]
+    pts1 = []
+    pts2 = []
+    def onclick(event):
+        x, y = event.xdata, event.ydata
 
         xc = int(x)
         yc = int(y)
@@ -128,8 +129,11 @@ def epipolarMatchGUI(I1, I2, F):
         l = F.dot(v)
         s = np.sqrt(l[0]**2+l[1]**2)
 
+        if not xc or not yc:
+            return
+
         if s==0:
-            error('Zero line vector in displayEpipolar')
+            raise Exception('Zero line vector in displayEpipolar')
 
         l = l/s
 
@@ -145,10 +149,17 @@ def epipolarMatchGUI(I1, I2, F):
             ys = -(l[0] * xs + l[2])/l[1]
 
         # plt.plot(x,y, '*', 'MarkerSize', 6, 'LineWidth', 2)
-        ax1.plot(x, y, '*', MarkerSize=6, linewidth=2)
+        ax1.plot(x, y, '*', markersize=6, linewidth=2)
         ax2.plot([xs, xe], [ys, ye], linewidth=2)
 
-        # draw points
+        # draw correspondence
         x2, y2 = sub.epipolarCorrespondence(I1, I2, F, xc, yc)
-        ax2.plot(x2, y2, 'ro', MarkerSize=8, linewidth=2)
+        ax2.plot(x2, y2, 'ro', markersize=6, linewidth=2)
         plt.draw()
+
+        pts1.append([xc, yc])
+        pts2.append([x2, y2])
+    f.canvas.mpl_connect('button_press_event', onclick)
+    plt.show()
+
+    return np.array(pts1), np.array(pts2)

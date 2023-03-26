@@ -25,6 +25,7 @@ F7 = sub.sevenpoint(pts1, pts2, M)
 
 # 3.1
 E = sub.essentialMatrix(F8,intrinsics['K1'],intrinsics['K2'])
-print(E)
 
-# 3.2
+# 4.1
+pst1_clicked, pst2_corr = helper.epipolarMatchGUI(im1,im2,F8)
+np.savez('./data/q4_1.npz', F=F8, pts1=pst1_clicked, pts2=pst2_corr)
