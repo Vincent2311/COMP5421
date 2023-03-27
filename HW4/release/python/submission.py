@@ -8,6 +8,7 @@ import numpy as np
 import helper
 import matplotlib.pyplot as plt
 from scipy import signal
+from scipy import optimize
 
 '''
 Q2.1: Eight Point Algorithm
@@ -175,7 +176,35 @@ Q5.1: RANSAC method.
 '''
 def ransacF(pts1, pts2, M):
     # Replace pass by your implementation
-    pass
+    N = pts1.shape[0]
+    iteration = 100
+    threshold = 0.05
+    best_F = None
+    inlier_count = 0
+    best_inlier = None
+
+    for i in range(iteration):
+        idx = np.random.randint(0, N, (7,))
+        Farray = sevenpoint(pts1[idx,:],pts2[idx,:],M)
+
+        for F in Farray:
+            pts1_hmg = np.hstack((pts1,np.ones((pts1.shape[0],1)))).T
+            pts2_hmg = np.hstack((pts2,np.ones((pts2.shape[0],1)))).T
+            epi_lines = F @ pts1_hmg
+            a = epi_lines[0,:]
+            b = epi_lines[1,:]
+            epi_lines = epi_lines / np.sum(np.sqrt(a**2 + b**2))
+
+            dist = np.abs(np.sum(pts2_hmg*epi_lines,axis=0))
+            inlier = dist < threshold
+
+            if np.sum(inlier) > inlier_count:
+                inlier_count = np.sum(inlier)
+                best_F = F
+                best_inlier = inlier
+
+    return best_F, best_inlier[:,None]
+                
 
 '''
 Q5.2: Rodrigues formula.
@@ -184,7 +213,15 @@ Q5.2: Rodrigues formula.
 '''
 def rodrigues(r):
     # Replace pass by your implementation
-    pass
+    theta = np.linalg.norm(r)
+    if theta == 0:
+        return np.eye(3) 
+    
+    r = r/theta
+    sin = np.sin(theta)
+    cos = np.cos(theta)
+    R = cos * np.eye(3) + (1-cos) * r @ r.T + sin * np.array([[0, -r[2, 0], r[1, 0]], [r[2, 0], 0, -r[0, 0]], [-r[1, 0], r[0, 0], 0]])
+    return R
 
 '''
 Q5.2: Inverse Rodrigues formula.
@@ -193,8 +230,28 @@ Q5.2: Inverse Rodrigues formula.
 '''
 def invRodrigues(R):
     # Replace pass by your implementation
-    pass
-
+    A = (R - R.T)/2
+    rho = np.array([A[2,1],A[0,2],A[1,0]])[:, None]
+    sin = np.linalg.norm(rho)
+    cos = (np.trace(R) - 1)/2
+    if np.abs(sin - 0.0) < 1e-10 and np.abs(cos - 1) < 1e-10:
+        return np.zeros((3,1))
+    elif np.abs(sin - 0.0) < 1e-10 and np.abs(cos + 1) < 1e-10:
+        tmp = R + np.eye(3)
+        v = None
+        for i in range(3):
+            if np.sum(tmp[:, i]) != 0:
+                v = tmp[:, i]
+                break
+        u = v/np.linalg.norm(v)
+        r = u*np.pi
+        if np.abs(np.linalg.norm(r) - np.pi) < 1e-10 and (np.abs(r[0, 0] - r[1, 0]) < 1e-10 and np.abs(r[0, 0] - 0.0) < 1e-10 and r[2, 0] < 0.0) or (np.abs(r[0, 0] - 0.0) < 1e-10 and r[1, 0] < 0.0) or (r[0, 0] < 0.0):
+            r = -r
+    else:
+        u = rho/sin
+        theta = np.arctan2(sin,cos)
+        r = u*theta
+    return r
 '''
 Q5.3: Rodrigues residual.
     Input:  K1, the intrinsics of camera 1
@@ -207,7 +264,25 @@ Q5.3: Rodrigues residual.
 '''
 def rodriguesResidual(K1, M1, p1, K2, p2, x):
     # Replace pass by your implementation
-    pass
+    P, r2, t2 = x[:-6], x[-6:-3], x[-3:]
+    P = np.reshape(P, (P.shape[0]//3, 3))
+    r2 = np.reshape(r2, (3, 1))
+    t2 = np.reshape(t2, (3, 1))
+    R2 = rodrigues(r2)
+    M2 = np.hstack((R2, t2))
+
+    C1 = K1 @ M1
+    C2 = K2 @ M2
+
+    P_hmg = np.hstack((P,np.ones((P.shape[0],1)))) 
+    p1_hat = C1 @ P_hmg.T
+    p2_hat = C2 @ P_hmg.T
+
+    p1_hat = (p1_hat / p1_hat[-1,:])[:2,:].T
+    p2_hat = (p2_hat / p2_hat[-1,:])[:2,:].T
+
+    residuals = np.concatenate([(p1-p1_hat).reshape([-1]), (p2-p2_hat).reshape([-1])])
+    return residuals
 
 '''
 Q5.3 Bundle adjustment.
@@ -223,7 +298,25 @@ Q5.3 Bundle adjustment.
 '''
 def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
     # Replace pass by your implementation
-    pass
+    x = P_init.flatten()
+    R = M2_init[:,:3]
+    t = M2_init[:,3]
+
+    r = invRodrigues(R)
+    x = np.append(x,r.flatten())
+    x = np.append(x,t.flatten())
+
+    loss = lambda x: rodriguesResidual(K1,M1,p1,K2,p2,x)
+    best_x,_ = optimize.leastsq(loss, x)
+
+    P2, r2, t2 = best_x[:-6], best_x[-6:-3], best_x[-3:]
+    P2 = np.reshape(P2, (P2.shape[0]//3, 3))
+    r2 = np.reshape(r2, (3, 1))
+    t2 = np.reshape(t2, (3, 1))
+    R2 = rodrigues(r2)
+    M2 = np.hstack((R2, t2))
+    
+    return M2,P2
 
 
     
