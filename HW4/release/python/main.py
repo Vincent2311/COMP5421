@@ -1,109 +1,133 @@
-"""
-Check the dimensions of function arguments
-This is *not* a correctness check
-Written by Chen Kong, 2018.
-"""
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
+import cv2
 import matplotlib.pyplot as plt
-import submission as sub
+from mpl_toolkits.mplot3d import Axes3D
 import helper
-data = np.load('../data/some_corresp.npz')
-im1 = plt.imread('../data/im1.png')
-im2 = plt.imread('../data/im2.png')
+import submission as sub
+import findM2
 
-N = data['pts1'].shape[0]
-M = 640
+def reprojection_error(K1, M1, pts1, K2, M2, pts2, W):
+    """Calculate the reprojection error for W
+    :K1: TODO
+    :M1: TODO
+    :pts1: TODO
+    :K2: TODO
+    :M2: TODO
+    :pts2: TODO
+    :W: TODO
+    :returns: error
+    """
+    C1 = K1 @ M1
+    C2 = K2 @ M2
+    homo_W = np.hstack((W, np.ones((W.shape[0], 1))))
+    pts1_proj = (C1 @ homo_W.T).T
+    pts2_proj = (C2 @ homo_W.T).T
+    pts1_proj = (pts1_proj/pts1_proj[:, -1][:, None])[:, 0:2]
+    pts2_proj = (pts2_proj/pts2_proj[:, -1][:, None])[:, 0:2]
+    err = np.sum(np.square(pts1 - pts1_proj) + np.square(pts2 - pts2_proj))
+    return err
 
-# 2.1
-# F8 = sub.eightpoint(data['pts1'], data['pts2'], M)
-# helper.displayEpipolarF(im1, im2, F8)
-# np.savez('q2_1.npz', F=F8, M=M)
 
-# # 2.2
-# pts1 = np.array([[256,270],[162,152],[199,127],[147,131],[381,236],[193,290],[157,231]])
-# pts2 = np.array([[257,266],[161,151],[197,135],[146,133],[380,215],[194,284],[157,211]])
-# Farray = sub.sevenpoint(pts1, pts2, M)
-# helper.displayEpipolarF(im1, im2, Farray[1])
-# np.savez('q2_2.npz', F=Farray[1], M=M, pts1=pts1, pts2=pts2)
+def main():
+    """Main function
+    :returns: TODO
+    """
+    im1 = plt.imread('../data/im1.png')
+    im2 = plt.imread('../data/im2.png')
+    M = max(im1.shape)
+    corresp_points = np.load('../data/some_corresp.npz')
+    pts1 = corresp_points['pts1']; pts2 = corresp_points['pts2']
+    no_points = pts1.shape[0]
+    intrinsics = np.load('../data/intrinsics.npz')
+    K1 = intrinsics['K1']; K2 = intrinsics['K2']
 
-# # 3.1
-# intrinsic = np.load('../data/intrinsics.npz')
-# K1, K2 = intrinsic['K1'], intrinsic['K2']
-# E = sub.essentialMatrix(F8, K1, K2)
-# print(E)
 
-# # 4.1
-# selected_pts1, selected_pts2 = helper.epipolarMatchGUI(im1, im2, F8)
-# #np.savez('q4_1.npz', F=F8, pts1=selected_pts1, pts2=selected_pts2)
+    # Q2.1
+    F_eightpoint = sub.eightpoint(pts1, pts2, M)
+    print("Fundamental Matrix from eightpoint: \n {} \n".format(F_eightpoint))
+    helper.displayEpipolarF(im1, im2, F_eightpoint)
+    np.savez('q2_1.npz', F=F_eightpoint, M=M)
 
-# 5.1
-noise_data = np.load('../data/some_corresp_noisy.npz')
-F, inliers = sub.ransacF(noise_data['pts1'], noise_data['pts2'], M)
-np.savez('tmpnew.npz', F=F, inliers=inliers)
-# helper.displayEpipolarF(im1, im2, F)
-# F_compare = sub.eightpoint(noise_data['pts1'], noise_data['pts2'], M)
-# helper.displayEpipolarF(im1, im2, F_compare)
+    # Q2.2 
+    pts1_seven = np.array([[256,270],[162,152],[199,127],[147,131],[381,236],[193,290],[157,231]])
+    pts2_seven = np.array([[257,266],[161,151],[197,135],[146,133],[380,215],[194,284],[157,211]])
+    Farray = sub.sevenpoint(pts1_seven, pts2_seven, M)
+    for F in Farray:
+        helper.displayEpipolarF(im1, im2, F)
+    F_sevenpoint = Farray[0]
+    print("Fundamental Matrix from sevenpoint: \n {} \n".format(F_sevenpoint))
+    np.savez('q2_2.npz', F=F_sevenpoint, M=M, pts1=pts1_seven, pts2=pts2_seven)
 
-# # 5.2
-# r = np.ones([3, 1])
-# R = sub.rodrigues(r)
-# assert R.shape == (3, 3), 'rodrigues returns 3x3 matrix'
+    # Q3.1
+    E = sub.essentialMatrix(F_eightpoint, K1, K2)
+    print("Essential matrix obtained from F_eightpoint: \n {} \n".format(E))
 
-# R = np.eye(3)
-# r = sub.invRodrigues(R)
-# assert (r.shape == (3, )) | (r.shape == (3, 1)), 'invRodrigues returns 3x1 vector'
+    # Q3.3
+    # Run findM2.py
 
-# 5.3
-noise_data = np.load('../data/some_corresp_noisy.npz')
-intrinsic = np.load('../data/intrinsics.npz')
-K1, K2 = intrinsic['K1'], intrinsic['K2']
-tmp = np.load('tmpnew.npz')
-F, inliers = tmp['F'], tmp['inliers']
-# inliers = inliers[:,0] 
+    # Q4.1
+    clicked_pts1, epi_corresp_pts = helper.epipolarMatchGUI(im1, im2, F_eightpoint)
+    np.savez('q4_1.npz', F=F_eightpoint, pts1=clicked_pts1, pts2=epi_corresp_pts)
 
-# helper.displayEpipolarF(im1, im2, F)
-# estimate the essential matrix E
-p1, p2 = noise_data['pts1'][inliers, :], noise_data['pts2'][inliers, :]
+    # Q4.2
+    # Run visualize.py
 
-E = np.dot(np.transpose(K2), np.dot(F, K1))
-M1 = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]])
-C1 = np.dot(K1, M1)
-M2s = helper.camera2(E)
-M2_init = None
-# find the correct M2
-for ind in range(M2s.shape[-1]):
-    M2_tmp = M2s[:, :, ind]
-    C2_tmp = np.dot(K2, M2_tmp)
-    w, err = sub.triangulate(C1, p1, C2_tmp, p2)
+    # Q5.1
+    noisy_corresp = np.load('../data/some_corresp_noisy.npz')
+    noisy_pts1 = noisy_corresp['pts1']
+    noisy_pts2 = noisy_corresp['pts2']
 
-    if np.min(w[:, -1]) > 0:
-        M2_init = M2_tmp
+    F_eightpoint = sub.eightpoint(noisy_pts1, noisy_pts2, M)
+    helper.displayEpipolarF(im1, im2, F_eightpoint)
 
-C2_init = np.dot(K2, M2_init)
-P_init, err = sub.triangulate(C1, p1, C2_init, p2)
-print(err)
+    F_sevenpoint, inliers = sub.ransacF(noisy_pts1, noisy_pts2, M)
+    helper.displayEpipolarF(im1, im2, F_sevenpoint)
 
-M2, P = sub.bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init)
+    # Q5.3
+    E = sub.essentialMatrix(F_sevenpoint, K1, K2)
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(P_init[:, 0], P_init[:, 1], P_init[:, 2], c='r', marker='.')
-ax.scatter(P[:, 0], P[:, 1], P[:, 2], c='b', marker='.')
-ax.set_xlabel('X Label')
-ax.set_ylabel('Y Label')
-ax.set_zlabel('Z Label')
-plt.show()
+    M1 = np.hstack((np.eye(3), np.zeros((3, 1))))
+    # M2, _, P = findM2.test_M2_solution(noisy_pts1[inliers, :], noisy_pts2[inliers, :], intrinsics, M)
+    K1 = intrinsics['K1']; K2 = intrinsics['K2']
+    F = sub.eightpoint(pts1, pts2, M)
+    E = sub.essentialMatrix(F, K1, K2)
 
-C2 = np.dot(K2, M2)
-W = np.hstack((P, np.ones((P.shape[0], 1))))
-err2 = 0
-for i in range(p1.shape[0]):
-    proj1 = np.dot(C1, np.transpose(W[i, :]))
-    proj2 = np.dot(C2, np.transpose(W[i, :]))
-    proj1 = np.transpose(proj1[:2] / proj1[-1])
-    proj2 = np.transpose(proj2[:2] / proj2[-1])
-    # compute error
-    err2 += np.sum((proj1 - p1[i]) ** 2 + (proj2 - p2[i]) ** 2)
+    M1 = np.eye(3)
+    C1 = K1 @ np.hstack((M1, np.zeros((3, 1))))
+    M2_list = helper.camera2(E)
 
-print(err2)
+    P = []
+    M2 = []
+    for i in range(M2_list.shape[-1]):
+        M2_inst = M2_list[:, :, i]
+        C2_inst = K1 @ M2_inst
+
+        W_inst, err = sub.triangulate(C1, pts1, C2_inst, pts2)
+        if np.min(W_inst[:, -1]) > 0:
+            P = W_inst
+            M2 = M2_inst
+
+    C2 = K2 @ M2
+
+
+    M2_opt, W_opt = sub.bundleAdjustment(K1, M1, noisy_pts1[inliers, :], K2, M2, noisy_pts2[inliers, :], P)
+
+    # Compute the reprojection error
+    err_before_BA = reprojection_error(K1, M1, noisy_pts1[inliers, :], K2, M2, noisy_pts2[inliers, :], P)
+    err_after_BA = reprojection_error(K1, M1, noisy_pts1[inliers, :], K2, M2_opt, noisy_pts2[inliers, :], W_opt)
+    print("Reprojection error before BA: {} \n Reprojection error after BA: {}".format(err_before_BA, err_after_BA))
+
+    # Plot the 3D reconstruction of noisy points
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111, projection='3d')
+
+    z_max1 = np.amax(P[:, 2])
+    ax1.scatter(P[:, 0]/z_max1, P[:, 1]/z_max1, P[:, 2]/z_max1, label='Before Bundle Adjustment')
+
+    z_max2 = np.amax(W_opt[:, 2])
+    ax1.scatter(W_opt[:, 0]/z_max2, W_opt[:, 1]/z_max2, W_opt[:, 2]/z_max2, c ='r', marker='o', label='After Bundle Adjustment')
+    ax1.legend()
+    plt.show()
+
+if __name__ == "__main__":
+    main()

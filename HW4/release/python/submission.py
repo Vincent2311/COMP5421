@@ -178,22 +178,23 @@ def ransacF(pts1, pts2, M):
     # Replace pass by your implementation
     N = pts1.shape[0]
     iteration = 100
-    threshold = 0.05
+    threshold = 0.8
     best_F = None
     inlier_count = 0
     best_inlier = None
+    pts1_hmg = np.hstack((pts1,np.ones((pts1.shape[0],1)))).T
+    pts2_hmg = np.hstack((pts2,np.ones((pts2.shape[0],1)))).T
 
     for i in range(iteration):
         idx = np.random.randint(0, N, (7,))
         Farray = sevenpoint(pts1[idx,:],pts2[idx,:],M)
 
         for F in Farray:
-            pts1_hmg = np.hstack((pts1,np.ones((pts1.shape[0],1)))).T
-            pts2_hmg = np.hstack((pts2,np.ones((pts2.shape[0],1)))).T
+            
             epi_lines = F @ pts1_hmg
             a = epi_lines[0,:]
             b = epi_lines[1,:]
-            epi_lines = epi_lines / np.sum(np.sqrt(a**2 + b**2))
+            epi_lines = epi_lines / np.sqrt(a**2 + b**2)
 
             dist = np.abs(np.sum(pts2_hmg*epi_lines,axis=0))
             inlier = dist < threshold
@@ -203,7 +204,7 @@ def ransacF(pts1, pts2, M):
                 best_F = F
                 best_inlier = inlier
 
-    return best_F, best_inlier[:,None]
+    return best_F, best_inlier
                 
 
 '''

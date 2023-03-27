@@ -1,7 +1,6 @@
 """
 Homework4.
 Helper functions.
-
 Written by Chen Kong, 2018.
 """
 import numpy as np
@@ -29,18 +28,19 @@ def displayEpipolarF(I1, I2, F):
     ax2.set_title('Verify that the corresponding point \n is on the epipolar line in this image')
     ax2.set_axis_off()
 
-    while True:
-        plt.sca(ax1)
-        x, y = plt.ginput(1, mouse_stop=2)[0]
+    def onclick(event):
+        xc = event.xdata
+        yc = event.ydata
 
-        xc = x
-        yc = y
+        if not xc or not yc:
+            return
+
         v = np.array([xc, yc, 1])
         l = F.dot(v)
         s = np.sqrt(l[0]**2+l[1]**2)
 
         if s==0:
-            error('Zero line vector in displayEpipolar')
+            raise Exception('Zero line vector in displayEpipolar')
 
         l = l/s
 
@@ -56,10 +56,12 @@ def displayEpipolarF(I1, I2, F):
             ys = -(l[0] * xs + l[2])/l[1]
 
         # plt.plot(x,y, '*', 'MarkerSize', 6, 'LineWidth', 2)
-        ax1.plot(x, y, '*', markersize=6, linewidth=2)
+        ax1.plot(xc, yc, '*', markersize=6, linewidth=2)
         ax2.plot([xs, xe], [ys, ye], linewidth=2)
         plt.draw()
 
+    f.canvas.mpl_connect('button_press_event', onclick)
+    plt.show()
 
 def _singularize(F):
     U, S, V = np.linalg.svd(F)
@@ -84,10 +86,10 @@ def refineF(F, pts1, pts2):
     f = scipy.optimize.fmin_powell(
         lambda x: _objective_F(x, pts1, pts2), F.reshape([-1]),
         maxiter=100000,
-        maxfun=10000
+        maxfun=10000,
+        disp=False
     )
     return _singularize(f.reshape([3, 3]))
-
 def camera2(E):
     U,S,V = np.linalg.svd(E)
     m = S[:2].mean()
