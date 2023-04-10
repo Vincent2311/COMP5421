@@ -21,8 +21,8 @@ def build_recognition_system(num_workers=2):
 	* dictionary: numpy.ndarray of shape (K,3F)
 	* SPM_layer_num: number of spatial pyramid layers
 	'''
-	train_data = np.load("../data/train_data.npz")
-	dictionary = np.load("dictionary.npy")
+	train_data = np.load("../data/train_data.npz",allow_pickle=True)
+	dictionary = np.load("dictionary.npy",allow_pickle=True)
 	# ----- TODO -----
 	## check layer_num
 	SPM_layer_num = 2
@@ -32,7 +32,8 @@ def build_recognition_system(num_workers=2):
 	for i, image_path in enumerate(image_names):
 		arglist.append(('../data/'+image_path[0],dictionary,SPM_layer_num + 1,dictionary.shape[0]))
 	pool = multiprocessing.Pool(num_workers)
-	features = pool.map(get_image_feature,arglist)
+	features = pool.starmap(get_image_feature,arglist)
+	print("Feature vector shape = {}".format(features.shape))
 	np.savez('trained_system.npz', features = features, labels = train_data['labels'], dictionary=dictionary, SPM_layer_num = SPM_layer_num)
 
 
@@ -49,8 +50,8 @@ def evaluate_recognition_system(num_workers=2):
 	'''
 
 
-	test_data = np.load("../data/test_data.npz")
-	trained_system = np.load("trained_system.npz")
+	test_data = np.load("../data/test_data.npz",allow_pickle=True)
+	trained_system = np.load("trained_system.npz",allow_pickle=True)
 	# ----- TODO -----
 	pass
 
@@ -126,26 +127,25 @@ def get_feature_from_wordmap_SPM(wordmap,layer_num,dict_size):
 	'''
 	
 	# ----- TODO -----
-	# need efficiency improvement
 	hist_all = []
 	for layer in range(layer_num):
-		patch_H = (wordmap.shape[0] /2**layer).astype(int)
-		patch_W = (wordmap.shape[1] /2**layer).astype(int)
-		x = 0
+		patch_H = math.floor(wordmap.shape[0] /2**layer)
+		patch_W = math.floor(wordmap.shape[1] /2**layer)
+		h = 0
 		hist_patch = []
 		for i in range(2**layer):
-			y = 0
+			w = 0
 			for j in range(2**layer):
-				patch = wordmap[x:x+patch_H,y:y+patch_W]
+				patch = wordmap[h:h+patch_H,w:w+patch_W]
 				hist = get_feature_from_wordmap(patch,dict_size)
 				hist_patch = np.append(hist_patch,hist)
-				y = y+patch_W
-			x = x + patch_H 
+				w = w+patch_W
+			h = h + patch_H 
 		if layer <= 1:
-			weight = float(2)**(-layer_num)
+			weight = 2**(-layer_num+1)
 		else:
-			weight = float(2)**(layer - layer_num - 1)
-		hist_patch = hist_patch / np.sum(hist_patch)
+			weight = 2**(layer - layer_num)
+		# hist_patch = hist_patch / np.sum(hist_patch)
 		hist_patch = hist_patch * weight
 		hist_all = np.append(hist_all,hist_patch)
 	hist_all = hist_all/np.sum(hist_all)
