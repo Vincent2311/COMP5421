@@ -24,16 +24,13 @@ def build_recognition_system(num_workers=2):
 	train_data = np.load("../data/train_data.npz",allow_pickle=True)
 	dictionary = np.load("dictionary.npy",allow_pickle=True)
 	# ----- TODO -----
-	## check layer_num
 	SPM_layer_num = 2
 	image_names = train_data['image_names']
-	labels = train_data['labels']
 	arglist = []
 	for i, image_path in enumerate(image_names):
 		arglist.append(('../data/'+image_path[0],dictionary,SPM_layer_num + 1,dictionary.shape[0]))
 	pool = multiprocessing.Pool(num_workers)
 	features = pool.starmap(get_image_feature,arglist)
-	print("Feature vector shape = {}".format(features.shape))
 	np.savez('trained_system.npz', features = features, labels = train_data['labels'], dictionary=dictionary, SPM_layer_num = SPM_layer_num)
 
 
@@ -53,9 +50,32 @@ def evaluate_recognition_system(num_workers=2):
 	test_data = np.load("../data/test_data.npz",allow_pickle=True)
 	trained_system = np.load("trained_system.npz",allow_pickle=True)
 	# ----- TODO -----
-	pass
+	dictionary = trained_system['dictionary']
+	SPM_layer_num = trained_system['SPM_layer_num']
 
-
+	image_names = test_data['image_names']
+	SPM_layer_num = 2
+	arglist = []
+	for i, image_path in enumerate(image_names):
+		arglist.append(('../data/'+image_path[0],dictionary,SPM_layer_num + 1,dictionary.shape[0]))
+	pool = multiprocessing.Pool(num_workers)
+	test_features = pool.starmap(get_image_feature,arglist)
+	test_labels = test_data['labels']
+	
+	predicted_labels = []
+	for feature in test_features:
+		predicted_feature = np.argmax(distance_to_set(feature, trained_system['features']))
+		predicted_label = (trained_system['labels'])[predicted_feature]
+		predicted_labels = np.append(predicted_labels,predicted_label)
+	predicted_labels.flatten()
+	conf = np.zeros((8,8))
+	for idx, label in enumerate(test_labels):
+		conf[label,int(predicted_labels[idx])] += 1
+		if label != predicted_labels[idx]:
+			print("wrongly predicted: ",test_data['image_names'][idx], label, predicted_labels[idx])
+	
+	accuracy = np.diag(conf).sum()/conf.sum()
+	return conf, accuracy
 
 
 def get_image_feature(file_path,dictionary,layer_num,K):
@@ -127,30 +147,40 @@ def get_feature_from_wordmap_SPM(wordmap,layer_num,dict_size):
 	'''
 	
 	# ----- TODO -----
+	H,W = wordmap.shape
+	patch_num = 2**(layer_num-1)
+	patch_H = H//patch_num
+	patch_W = W//patch_num
+	weight = 1/2
 	hist_all = []
-	for layer in range(layer_num):
-		patch_H = math.floor(wordmap.shape[0] /2**layer)
-		patch_W = math.floor(wordmap.shape[1] /2**layer)
-		h = 0
-		hist_patch = []
-		for i in range(2**layer):
-			w = 0
-			for j in range(2**layer):
-				patch = wordmap[h:h+patch_H,w:w+patch_W]
-				hist = get_feature_from_wordmap(patch,dict_size)
-				hist_patch = np.append(hist_patch,hist)
-				w = w+patch_W
-			h = h + patch_H 
-		if layer <= 1:
-			weight = 2**(-layer_num+1)
-		else:
-			weight = 2**(layer - layer_num)
-		# hist_patch = hist_patch / np.sum(hist_patch)
-		hist_patch = hist_patch * weight
-		hist_all = np.append(hist_all,hist_patch)
-	hist_all = hist_all/np.sum(hist_all)
-	return hist_all
+
+	patch_hist_all = np.empty((patch_num,patch_num,dict_size))
+	for idx in range(patch_num*patch_num):
+		row = idx//patch_num
+		col = idx % patch_num
+		patch = wordmap[row*patch_H:(row+1)*patch_H,col*patch_W:(col+1)*patch_W]
+		patch_hist = get_feature_from_wordmap(patch, dict_size)
+		patch_hist_all[row,col,:] = patch_hist
+	
+	hist_all = np.append(hist_all,(patch_hist_all*weight).flatten())
+
+	pre_hist = patch_hist_all
+	
+	for layer in range(layer_num-2, -1, -1):
+		patch_num = patch_num//2
+		weight = weight/(2 if layer!=0 else 1)
 		
+		layer_hist = np.empty((patch_num,patch_num,dict_size))
+		for idx in range(patch_num*patch_num):
+			row = idx//patch_num
+			col = idx % patch_num
+			layer_hist[row,col,:] = np.sum(pre_hist[row*2:(row+1)*2,col*2:(col+1)*2,:],axis=(0,1))
+		
+		hist_all = np.append(hist_all,(layer_hist*weight).flatten())
+		pre_hist = layer_hist
+
+	hist_all = hist_all/np.sum(hist_all) 
+	return hist_all
 
 
 
