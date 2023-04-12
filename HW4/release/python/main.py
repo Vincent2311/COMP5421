@@ -77,57 +77,57 @@ def main():
     noisy_pts1 = noisy_corresp['pts1']
     noisy_pts2 = noisy_corresp['pts2']
 
-    F_eightpoint = sub.eightpoint(noisy_pts1, noisy_pts2, M)
-    helper.displayEpipolarF(im1, im2, F_eightpoint)
+    # F_eightpoint = sub.eightpoint(noisy_pts1, noisy_pts2, M)
+    # helper.displayEpipolarF(im1, im2, F_eightpoint)
 
     F_sevenpoint, inliers = sub.ransacF(noisy_pts1, noisy_pts2, M)
     helper.displayEpipolarF(im1, im2, F_sevenpoint)
 
-    # Q5.3
-    E = sub.essentialMatrix(F_sevenpoint, K1, K2)
+    # # Q5.3
+    # E = sub.essentialMatrix(F_sevenpoint, K1, K2)
 
-    M1 = np.hstack((np.eye(3), np.zeros((3, 1))))
-    # M2, _, P = findM2.test_M2_solution(noisy_pts1[inliers, :], noisy_pts2[inliers, :], intrinsics, M)
-    K1 = intrinsics['K1']; K2 = intrinsics['K2']
-    F = sub.eightpoint(pts1, pts2, M)
-    E = sub.essentialMatrix(F, K1, K2)
+    # M1 = np.hstack((np.eye(3), np.zeros((3, 1))))
+    # # M2, _, P = findM2.test_M2_solution(noisy_pts1[inliers, :], noisy_pts2[inliers, :], intrinsics, M)
+    # K1 = intrinsics['K1']; K2 = intrinsics['K2']
+    # F = sub.eightpoint(pts1, pts2, M)
+    # E = sub.essentialMatrix(F, K1, K2)
 
-    M1 = np.eye(3)
-    C1 = K1 @ np.hstack((M1, np.zeros((3, 1))))
-    M2_list = helper.camera2(E)
+    # M1 = np.eye(3)
+    # C1 = K1 @ np.hstack((M1, np.zeros((3, 1))))
+    # M2_list = helper.camera2(E)
 
-    P = []
-    M2 = []
-    for i in range(M2_list.shape[-1]):
-        M2_inst = M2_list[:, :, i]
-        C2_inst = K1 @ M2_inst
+    # P = []
+    # M2 = []
+    # for i in range(M2_list.shape[-1]):
+    #     M2_inst = M2_list[:, :, i]
+    #     C2_inst = K1 @ M2_inst
 
-        W_inst, err = sub.triangulate(C1, pts1, C2_inst, pts2)
-        if np.min(W_inst[:, -1]) > 0:
-            P = W_inst
-            M2 = M2_inst
+    #     W_inst, err = sub.triangulate(C1, pts1, C2_inst, pts2)
+    #     if np.min(W_inst[:, -1]) > 0:
+    #         P = W_inst
+    #         M2 = M2_inst
 
-    C2 = K2 @ M2
+    # C2 = K2 @ M2
 
 
-    M2_opt, W_opt = sub.bundleAdjustment(K1, M1, noisy_pts1[inliers, :], K2, M2, noisy_pts2[inliers, :], P)
+    # M2_opt, W_opt = sub.bundleAdjustment(K1, M1, noisy_pts1[inliers, :], K2, M2, noisy_pts2[inliers, :], P)
 
-    # Compute the reprojection error
-    err_before_BA = reprojection_error(K1, M1, noisy_pts1[inliers, :], K2, M2, noisy_pts2[inliers, :], P)
-    err_after_BA = reprojection_error(K1, M1, noisy_pts1[inliers, :], K2, M2_opt, noisy_pts2[inliers, :], W_opt)
-    print("Reprojection error before BA: {} \n Reprojection error after BA: {}".format(err_before_BA, err_after_BA))
+    # # Compute the reprojection error
+    # err_before_BA = reprojection_error(K1, M1, noisy_pts1[inliers, :], K2, M2, noisy_pts2[inliers, :], P)
+    # err_after_BA = reprojection_error(K1, M1, noisy_pts1[inliers, :], K2, M2_opt, noisy_pts2[inliers, :], W_opt)
+    # print("Reprojection error before BA: {} \n Reprojection error after BA: {}".format(err_before_BA, err_after_BA))
 
-    # Plot the 3D reconstruction of noisy points
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111, projection='3d')
+    # # Plot the 3D reconstruction of noisy points
+    # fig = plt.figure()
+    # ax1 = fig.add_subplot(111, projection='3d')
 
-    z_max1 = np.amax(P[:, 2])
-    ax1.scatter(P[:, 0]/z_max1, P[:, 1]/z_max1, P[:, 2]/z_max1, label='Before Bundle Adjustment')
+    # z_max1 = np.amax(P[:, 2])
+    # ax1.scatter(P[:, 0]/z_max1, P[:, 1]/z_max1, P[:, 2]/z_max1, label='Before Bundle Adjustment')
 
-    z_max2 = np.amax(W_opt[:, 2])
-    ax1.scatter(W_opt[:, 0]/z_max2, W_opt[:, 1]/z_max2, W_opt[:, 2]/z_max2, c ='r', marker='o', label='After Bundle Adjustment')
-    ax1.legend()
-    plt.show()
+    # z_max2 = np.amax(W_opt[:, 2])
+    # ax1.scatter(W_opt[:, 0]/z_max2, W_opt[:, 1]/z_max2, W_opt[:, 2]/z_max2, c ='r', marker='o', label='After Bundle Adjustment')
+    # ax1.legend()
+    # plt.show()
 
 if __name__ == "__main__":
     main()

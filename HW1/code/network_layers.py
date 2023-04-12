@@ -20,26 +20,26 @@ def extract_deep_feature(x,vgg16_weights):
 	std=[0.229,0.224,0.225]
 	x = skimage.transform.resize(x,(224,224,3))
 	x = (x - mean)/std
-	out = None
+	feat = None
 	linear_count = 0
 	for layer in vgg16_weights:
 		if layer[0] == 'conv2d':
-			out = multichannel_conv2d(x,layer[1],layer[2])
+			feat = multichannel_conv2d(x,layer[1],layer[2])
 		elif layer[0] == 'relu':
-			out = relu(x)
+			feat = relu(x)
 			if linear_count == 2:
 				break
 		elif layer[0] == 'maxpool2d':
-			out = max_pool2d(x,layer[1])
+			feat = max_pool2d(x,layer[1])
 		elif layer[0] == 'linear':
 			if len(x.shape) > 1:
 				x = x.transpose(2, 0, 1)
 				x = x.ravel()
-			out = linear(x,layer[1],layer[2])
+			feat = linear(x,layer[1],layer[2])
 			linear_count = linear_count + 1
-		x = out
+		x = feat
 	
-	return x
+	return feat
 
 
 def multichannel_conv2d(x,weight,bias):
