@@ -16,11 +16,11 @@ def findLetters(image):
     # insert processing in here
     # one idea estimate noise -> denoise -> greyscale -> threshold -> morphology -> label -> skip small boxes 
     # this can be 10 to 15 lines of code using skimage functions
-    image = skimage.restoration.denoise_bilateral(image,channel_axis=-1)
+    image = skimage.restoration.denoise_wavelet(image,channel_axis=-1)
     gray = skimage.color.rgb2gray(image)
     
     # threshold & morphology
-    thresh = skimage.filters.threshold_otsu(gray)
+    thresh = skimage.filters.threshold_li(gray)
     bw = gray < thresh
     bw = skimage.morphology.closing(bw)
 

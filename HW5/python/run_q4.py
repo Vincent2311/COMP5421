@@ -64,11 +64,12 @@ for img in os.listdir('../images'):
         for x,y,width,height in row:
             cropped = bw[y-height//2:y+height//2, x-width//2:x+width//2]
             if height > width:
-                padding=((0,0),(0,height-width))
+                padding=((10,10),((height-width)//2 + 10,(height-width)//2 + 10))
             else:
-                padding=((0,width-height),(0,0))
+                padding=(((width-height)//2 + width//10,(width-height)//2 + 10),(10,10))
             cropped = np.pad(cropped,padding,mode='constant',constant_values=(1, 1))
             cropped = skimage.transform.resize(cropped, (32, 32))
+            cropped = skimage.morphology.erosion(cropped)
             line.append(cropped.T.flatten())
         data.append(line)
     print("data size",len(data))
