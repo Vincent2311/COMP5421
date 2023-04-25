@@ -51,9 +51,7 @@ for img in os.listdir('../images'):
             row.append(center)
     row = sorted(row,key = lambda center: center[0])
     rows.append(row)
-    print("row size",len(rows[0]))
 
-    ##correct above
     
     # crop the bounding boxes
     # note.. before you flatten, transpose the image (that's how the dataset is!)
@@ -72,9 +70,7 @@ for img in os.listdir('../images'):
             cropped = skimage.morphology.erosion(cropped)
             line.append(cropped.T.flatten())
         data.append(line)
-    print("data size",len(data))
 
-    ## correct below
     
     # load the weights
     # run the crops through your neural network and print them out
