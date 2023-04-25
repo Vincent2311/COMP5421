@@ -1,42 +1,39 @@
 import torch
-import scipy.io
 import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 
 batch_size = 120
-max_iters = 80
+max_iters = 30
 learning_rate = 0.005
 hidden_size = 64
 
 
-train_dataloader = DataLoader(torchvision.datasets.MNIST(root='./data', train=True,
+train_dataloader = DataLoader(torchvision.datasets.MNIST(root='../data/MINSTdata', train=True,
                                       download=True, transform=transforms.ToTensor()),batch_size=batch_size,
                                            shuffle=True, num_workers=2)
 
-test_dataloader = DataLoader(torchvision.datasets.MNIST(root='./data', train=True,
+test_dataloader = DataLoader(torchvision.datasets.MNIST(root='../data/MINSTdata', train=False,
                                       download=True, transform=transforms.ToTensor()),batch_size=batch_size,
-                                           shuffle=True, num_workers=2)
+                                           shuffle=False, num_workers=2)
 
 
 class ConvNet(nn.Module):
-
     def __init__(self):
         super(ConvNet, self).__init__()
-        # an affine operation: y = Wx + b
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=5, stride=1, padding=2),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(1, 2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
         self.layer2 = nn.Sequential(
-            nn.Conv2d(16, 32, kernel_size=5, stride=1, padding=2),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(2, 4, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(4),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
-        self.fc = nn.Linear(7*7*32, 10)
+        self.fc = nn.Linear(7*7*4, 10)
 
     def forward(self, x):
         x = self.layer1(x)
@@ -48,16 +45,13 @@ class ConvNet(nn.Module):
 model = ConvNet()
 
 train_loss, train_accuracy = [],[]
-validation_loss, validation_accuracy = [],[]
-valid_acc, valid_loss = None, None
 
 criterion = nn.CrossEntropyLoss()
 optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 for itr in range(max_iters):
     train_total_loss = 0
-    train_acc = 0
-    # model.train()   
+    train_acc = 0  
     for images,labels in train_dataloader:
         # Forward pass
 

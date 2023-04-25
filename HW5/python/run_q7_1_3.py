@@ -2,15 +2,12 @@ import torch
 import scipy.io
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
-import torchvision
-import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 
 batch_size = 120
-max_iters = 80
-learning_rate = 0.005
+max_iters = 30
+learning_rate = 0.0025
 hidden_size = 64
-
 
 train_data = scipy.io.loadmat('../data/nist36_train.mat')
 test_data = scipy.io.loadmat('../data/nist36_test.mat')
@@ -22,22 +19,21 @@ test_x, test_y = torch.from_numpy(test_data['test_data']).type(torch.float32), t
 train_dataloader = DataLoader(TensorDataset(train_x, train_y), batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(TensorDataset(test_x, test_y), batch_size=batch_size, shuffle=True)
 
-class ConvNet(nn.Module):
 
+class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
-        # an affine operation: y = Wx + b
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=5, stride=1, padding=2),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(1, 2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
         self.layer2 = nn.Sequential(
-            nn.Conv2d(16, 32, kernel_size=5, stride=1, padding=2),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(2, 4, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(4),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
-        self.fc = nn.Linear(7*7*32, 10)
+        self.fc = nn.Linear(8*8*4, 36)
 
     def forward(self, x):
         x = self.layer1(x)
@@ -45,6 +41,7 @@ class ConvNet(nn.Module):
         x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         return x
+    
     
 model = ConvNet()
 
@@ -61,11 +58,12 @@ for itr in range(max_iters):
     # model.train()   
     for images,labels in train_dataloader:
         # Forward pass
-
+        images = torch.reshape(images,(batch_size,1,32,32))
+        targets = torch.max(labels, 1)[1]
         outputs = model(images)
         predicted = torch.max(outputs, 1)[1]
-        train_acc += predicted.eq(labels.data).sum().item() /labels.size()[0]
-        loss = criterion(outputs, labels)
+        train_acc += predicted.eq(targets.data).sum().item() /labels.size()[0]
+        loss = criterion(outputs, targets)
         train_total_loss += loss.detach().numpy()
         
         # Backward and optimize
@@ -87,14 +85,17 @@ test_total_loss = 0
 test_acc = 0
 # Forward pass
 for images,labels in test_dataloader:
+    images = torch.reshape(images,(batch_size,1,32,32))
     outputs = model(images)
     predicted = torch.max(outputs.data, 1)[1]
-    test_acc += predicted.eq(labels.data).sum().item() /labels.size()[0]
+    targets = torch.max(labels, 1)[1]
+    test_acc += predicted.eq(targets.data).sum().item() /labels.size()[0]
     loss = criterion(outputs, labels)
     test_total_loss += loss
 
 print("Test accuracy: ", test_acc/len(test_dataloader))
 print("Test loss: ", test_total_loss/(len(test_dataloader)*batch_size))
+
 
 
 plt.figure('accuracy')
