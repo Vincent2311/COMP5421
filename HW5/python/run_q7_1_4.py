@@ -48,50 +48,50 @@ class ConvNet(nn.Module):
         x = self.fc(x)
         return x
     
-# model = ConvNet()
+model = ConvNet()
 
-# train_loss, train_accuracy = [],[]
+train_loss, train_accuracy = [],[]
 
-# criterion = nn.CrossEntropyLoss()
-# optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
+criterion = nn.CrossEntropyLoss()
+optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-# for itr in range(max_iters):
-#     train_total_loss = 0
-#     train_acc = 0  
-#     for images,labels in train_dataloader:
-#         # Forward pass
+for itr in range(max_iters):
+    train_total_loss = 0
+    train_acc = 0  
+    for images,labels in train_dataloader:
+        # Forward pass
 
-#         outputs = model(images)
-#         predicted = torch.max(outputs, 1)[1]
-#         train_acc += predicted.eq(labels.data).sum().item() /labels.size()[0]
-#         loss = criterion(outputs, labels)
-#         train_total_loss += loss.detach().numpy()
+        outputs = model(images)
+        predicted = torch.max(outputs, 1)[1]
+        train_acc += predicted.eq(labels.data).sum().item() /labels.size()[0]
+        loss = criterion(outputs, labels)
+        train_total_loss += loss.detach().numpy()
         
-#         # Backward and optimize
-#         optim.zero_grad()
-#         loss.backward()
-#         optim.step()
+        # Backward and optimize
+        optim.zero_grad()
+        loss.backward()
+        optim.step()
         
-#     avg_accuracy = train_acc / len(train_dataloader)
-#     train_total_loss /= (len(train_dataloader) * batch_size)
-#     train_accuracy.append(avg_accuracy)
-#     train_loss.append(train_total_loss)
+    avg_accuracy = train_acc / len(train_dataloader)
+    train_total_loss /= (len(train_dataloader) * batch_size)
+    train_accuracy.append(avg_accuracy)
+    train_loss.append(train_total_loss)
 
-#     if (itr+1) % 2 == 0:
-#             print ('Epoch [{}/{}], Acc: {:.4f}, Loss: {:.4f}' 
-#                    .format(itr+1, max_iters , avg_accuracy,loss.item()))
+    if (itr+1) % 2 == 0:
+            print ('Epoch [{}/{}], Acc: {:.4f}, Loss: {:.4f}' 
+                   .format(itr+1, max_iters , avg_accuracy,loss.item()))
 
-# plt.figure('accuracy')
-# plt.plot(range(max_iters), train_accuracy, color='b')
-# plt.legend(['training'])
-# plt.show()
+plt.figure('accuracy')
+plt.plot(range(max_iters), train_accuracy, color='b')
+plt.legend(['training'])
+plt.show()
 
-# plt.figure('loss')
-# plt.plot(range(max_iters), train_loss, color='g')
-# plt.legend(['training'])
-# plt.show()
+plt.figure('loss')
+plt.plot(range(max_iters), train_loss, color='g')
+plt.legend(['training'])
+plt.show()
 
-# torch.save(model.state_dict(),'run_q7_1_4.pth')
+torch.save(model.state_dict(),'run_q7_1_4.pth')
 
 model = ConvNet()
 model.load_state_dict(torch.load('run_q7_1_4.pth'))
