@@ -17,6 +17,7 @@ def main():
   num_of_epoch = 10
   learning_rate = 0.001
   train_transform = T.Compose([
+    T.Resize(256),
     T. CenterCrop((224,224)),
     T.RandomHorizontalFlip(),
     T.ToTensor(),            
@@ -30,6 +31,7 @@ def main():
                       shuffle=True)
 
   val_transform = T.Compose([
+      T.Resize(224),
       T. CenterCrop((224,224)),
       T.ToTensor(),
       T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
@@ -40,6 +42,7 @@ def main():
                     num_workers=2)
   
   test_transform = T.Compose([
+      T.Resize(224),
       T. CenterCrop((224,224)),
       T.ToTensor(),
       T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
