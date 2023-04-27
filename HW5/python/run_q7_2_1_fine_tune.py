@@ -14,7 +14,7 @@ IMAGENET_STD = [0.229, 0.224, 0.225]
 
 def main():
   batch_size = 32
-  num_of_epoch = 20
+  num_of_epoch = 10
   learning_rate = 0.001
   train_transform = T.Compose([
     T. CenterCrop((224,224)),
@@ -74,7 +74,7 @@ def main():
     train_acc,train_loss = check_accuracy_loss(model, train_loader,criterion,batch_size)
     val_acc,val_loss = check_accuracy_loss(model, val_loader,criterion,batch_size)
     if (epoch+1) % 2 == 0:
-            print ('P1Epoch [{}/{}], train_acc: {:.4f}, train_Loss: {:.4f}, val_acc: {:.4f}, val_loss: {:.4f}' 
+            print ('P1Epoch [{}/{}], train_acc: {:.6f}, train_Loss: {:.6f}, val_acc: {:.6f}, val_loss: {:.6f}' 
                    .format(epoch+1, num_of_epoch ,train_acc,train_loss,val_acc,val_loss))
 
   # Now we want to finetune the entire model for a few epochs. To do thise we
@@ -101,7 +101,7 @@ def main():
     training_accuracy.append(train_acc)
     validation_accuracy.append(val_acc)
     if (epoch+1) % 2 == 0:
-      print ('P2Epoch [{}/{}], train_acc: {:.4f}, train_Loss: {:.4f}, val_acc: {:.4f}, val_loss: {:.4f}' 
+      print ('P2Epoch [{}/{}], train_acc: {:.6f}, train_Loss: {:.6f}, val_acc: {:.6f}, val_loss: {:.6f}' 
                    .format(epoch+1, num_of_epoch ,train_acc,train_loss,val_acc,val_loss))
   
   plt.figure('accuracy')
@@ -109,16 +109,18 @@ def main():
   plt.plot(range(num_of_epoch), validation_accuracy, color='g')
   plt.legend(['training','validation'])
   plt.show()
+  plt.savefig('accuracy.png')
 
   plt.figure('loss')
   plt.plot(range(num_of_epoch), training_loss, color='b')
   plt.plot(range(num_of_epoch), validation_loss, color='g')
   plt.legend(['training','validation'])
   plt.show()
+  plt.savefig('loss.png')
 
   # Test period
   test_acc,test_loss = check_accuracy_loss(model, test_loader,criterion,batch_size)
-  print('Test accuracy: ', test_loss)
+  print('Test loss: ', test_loss)
   print('Test accuracy: ', test_acc)
 
 
@@ -160,7 +162,7 @@ def check_accuracy_loss(model, loader,criterion,batch_size):
     # Cast the image data to the correct type and wrap it in a Variable. At
     # test-time when we do not need to compute gradients, marking the Variable
     # as volatile can reduce memory usage and slightly improve speed.
-    x_var = Variable(x.type(torch.FloatTensor), volatile=True)
+    x_var = Variable(x.type(torch.FloatTensor))
     
     # Run the model forward, and compare the argmax score with the ground-truth
     # category.

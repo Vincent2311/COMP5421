@@ -12,9 +12,9 @@ IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
 def main():
-  batch_size = 32
-  num_of_epoch = 20
-  learning_rate = 0.001
+  batch_size = 64
+  num_of_epoch = 100
+  learning_rate = 0.0001
   train_transform = T.Compose([
     T.Resize(256),
     T.RandomResizedCrop(224),
@@ -23,13 +23,6 @@ def main():
     T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
   ])
 
-  train_transform = T.Compose([
-      T. CenterCrop((224,224)),
-      T.RandomHorizontalFlip(),
-      T.ToTensor(),            
-      T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-    ])
-
   train_dset = ImageFolder('../data/oxford-flowers17/train', transform=train_transform)
   train_loader = DataLoader(train_dset,
                         batch_size=batch_size,
@@ -37,6 +30,7 @@ def main():
                         shuffle=True)
 
   val_transform = T.Compose([
+        T.Resize(224),
         T. CenterCrop((224,224)),
         T.ToTensor(),
         T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
@@ -44,9 +38,11 @@ def main():
   val_dset = ImageFolder('../data/oxford-flowers17/val', transform=val_transform)
   val_loader = DataLoader(val_dset,
                       batch_size=batch_size,
+                      shuffle=False,
                       num_workers=2)
     
   test_transform = T.Compose([
+        T.Resize(224),
         T. CenterCrop((224,224)),
         T.ToTensor(),
         T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
@@ -54,37 +50,38 @@ def main():
   test_dset = ImageFolder('../data/oxford-flowers17/test', transform=test_transform)
   test_loader = DataLoader(test_dset,
                       batch_size=batch_size,
+                      shuffle=False,
                       num_workers=2)
   
 
   class ConvNet(nn.Module):
     def __init__(self):
-      super(ConvNet, self).__init__()
-      self.conv1 = nn.Sequential(nn.Conv2d(3, 6, kernel_size=5, stride=1),
-                                  nn.ReLU(),
-                                  nn.MaxPool2d(stride=2, kernel_size=2)
-                                )
-      self.conv2 = nn.Sequential(nn.Conv2d(6, 20, kernel_size=5, stride=1),
-                                  nn.ReLU(),
-                                  nn.MaxPool2d(stride=2, kernel_size=2)
-                                )
-      self.conv3 = nn.Sequential(nn.Conv2d(20, 80, kernel_size=5, stride=1),
-                                  nn.ReLU(),
-                                  nn.MaxPool2d(stride=2, kernel_size=2)
-                                )
-      self.fc1 = nn.Sequential(nn.Linear(24*24*80, 60),
-                                nn.ReLU(),
-                                )
-      self.fc2 = nn.Sequential(nn.Linear(60, 17))
+        super(ConvNet, self).__init__()
+        self.conv1 = nn.Sequential(nn.Conv2d(3, 6, kernel_size=7, stride=1, padding=3),
+                                    nn.ReLU(),
+                                    nn.MaxPool2d(stride=2, kernel_size=2)
+                                    )
+        self.conv2 = nn.Sequential(nn.Conv2d(6, 16, kernel_size=5, stride=1, padding=2),
+                                    nn.ReLU(),
+                                    nn.MaxPool2d(stride=2, kernel_size=2)
+                                    )
+        self.conv3 = nn.Sequential(nn.Conv2d(16, 120, kernel_size=5, stride=1, padding=2),
+                                    nn.ReLU(),
+                                    nn.MaxPool2d(stride=2, kernel_size=2)
+                                    )
+        self.fc1 = nn.Sequential(nn.Linear(28*28*120, 84),
+                                  nn.ReLU()
+                                  )
+        self.fc2 = nn.Sequential(nn.Linear(84, 17))
 
     def forward(self, x):
-      x = self.conv1(x)
-      x = self.conv2(x)
-      x = self.conv3(x)
-      x = x.reshape(x.size(0), -1)
-      x = self.fc1(x)
-      x = self.fc2(x)
-      return x
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = x.view(-1, 28*28*120)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        return x
     
     
   model = ConvNet()
@@ -93,7 +90,7 @@ def main():
   criterion = nn.CrossEntropyLoss().type(torch.FloatTensor)
 
   optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    
+  
 
   # Train the entire model for a few more epochs, checking accuracy on the
   # train and validation sets after each epoch.
@@ -117,17 +114,19 @@ def main():
   plt.plot(range(num_of_epoch), validation_accuracy, color='g')
   plt.legend(['training','validation'])
   plt.show()
+  plt.savefig('accuracy.png')
 
   plt.figure('loss')
   plt.plot(range(num_of_epoch), training_loss, color='b')
   plt.plot(range(num_of_epoch), validation_loss, color='g')
   plt.legend(['training','validation'])
   plt.show()
+  plt.savefig('loss.png')
 
   # Test period
   test_acc,test_loss = check_accuracy_loss(model, test_loader,criterion,batch_size)
-  print('Test accuracy: ', test_loss)
   print('Test accuracy: ', test_acc)
+  print('Test loss: ', test_loss)
 
 
 def run_epoch(model, loss_fn, loader, optimizer):
@@ -165,14 +164,10 @@ def check_accuracy_loss(model, loader,criterion,batch_size):
   model.eval()
   num_correct, num_samples,total_loss = 0, 0, 0
   for x, y in loader:
-    # Cast the image data to the correct type and wrap it in a Variable. At
-    # test-time when we do not need to compute gradients, marking the Variable
-    # as volatile can reduce memory usage and slightly improve speed.
-    x_var = Variable(x.type(torch.FloatTensor), volatile=True)
     
     # Run the model forward, and compare the argmax score with the ground-truth
     # category.
-    scores = model(x_var)
+    scores = model(x)
     _, preds = scores.data.cpu().max(1)
     total_loss += criterion(scores, y).detach().numpy()
     num_correct += (preds == y).sum()
