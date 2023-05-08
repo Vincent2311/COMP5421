@@ -27,7 +27,8 @@ def LucasKanade(It, It1, rect, p0 = np.zeros(2)):
         x_coor_wrapped = p[0] + x_coor
         y_coor_wrapped = p[1] + y_coor
         It1_wrapped = rect_It1_spline.ev(y_coor_wrapped,x_coor_wrapped)
-        b = It1_wrapped.flatten() - It_rect.flatten()
+        b = It_rect.flatten() - It1_wrapped.flatten()
+        
 
         y_gradient = rect_It1_spline.ev(y_coor_wrapped,x_coor_wrapped,dx = 1,dy = 0).flatten()
         x_gradient = rect_It1_spline.ev(y_coor_wrapped,x_coor_wrapped,dx = 0,dy=1).flatten()

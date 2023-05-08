@@ -12,7 +12,7 @@ carseqrects = np.empty((sequence.shape[2],4))
 carseqrects[0] = rect.T.flatten()
 
 
-for i in [1,100]:
+for i in range(1, sequence.shape[2]):
     It = sequence[:,:,i-1]
     It1 = sequence[:,:,i]
     p =  LucasKanade(It,It1,rect)
