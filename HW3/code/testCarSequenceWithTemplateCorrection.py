@@ -16,14 +16,11 @@ epsilon = 0.5
 ori_rects = np.load('carseqrects.npy')
 
 It = sequence[:,:,0]
-new_rect = np.empty_like(rect)
+
 for i in range(1, sequence.shape[2]):
     It1 = sequence[:,:,i]
     p =  LucasKanade(It,It1,rect)
-    new_rect[0] = p[0] + rect[0]
-    new_rect[2] = p[0] + rect[2]
-    new_rect[1] = p[1] + rect[1]
-    new_rect[3] = p[1] + rect[3]
+    new_rect = [rect[0]+p[0], rect[1]+p[1], rect[2]+p[0], rect[3]+p[1]]
     
     if i==1 or i == 100 or i==200 or i ==300 or i == 400:
         img = np.dstack((It1,It1,It1)).copy()
@@ -36,7 +33,7 @@ for i in range(1, sequence.shape[2]):
         rect = new_rect
         pre_p = np.empty_like(p)
         pre_p[:] = p
-    carseqrects[i] = rect.T.flatten()
+    carseqrects[i] = np.array(rect).T.flatten()
     
         
 rect_list = np.array(carseqrects)
