@@ -27,7 +27,6 @@ for i in range(1, sequence.shape[2]):
         cv2.rectangle(img, (np.round(rect[0][0]).astype(int), np.round(rect[1][0]).astype(int)), (np.round(rect[2][0]).astype(int), np.round(rect[3][0]).astype(int)), color=(0,255,255), thickness=2)
         cv2.imwrite('q1-3_{}.jpg'.format(i), img*255)
 
-rect_list = np.array(carseqrects)
 np.save('carseqrects.npy', carseqrects)
 
 

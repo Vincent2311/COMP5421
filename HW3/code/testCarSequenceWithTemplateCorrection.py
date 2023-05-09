@@ -36,5 +36,4 @@ for i in range(1, sequence.shape[2]):
     carseqrects[i] = np.array(rect).T.flatten()
     
         
-rect_list = np.array(carseqrects)
 np.save('carseqrects-wcrt.npy', carseqrects)

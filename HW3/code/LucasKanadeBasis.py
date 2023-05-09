@@ -12,36 +12,46 @@ def LucasKanadeBasis(It, It1, rect, bases):
 	#	p: movement vector [dp_x, dp_y]
 
     # Put your implementation here
-    threshold = 0.005 
-    x_coor = np.arange(rect[0][0],rect[2][0])
-    y_coor = np.arange(rect[1][0],rect[3][0])
-    x_coor,y_coor = np.meshgrid(x_coor,y_coor) 
+    threshold = 0.0001 
+
+    x_min, y_min, x_max, y_max = rect[0], rect[1], rect[2], rect[3]
     rect_It1_spline = RectBivariateSpline(np.arange(It1.shape[0]),np.arange(It1.shape[1]),It1)
     rect_It_spline = RectBivariateSpline(np.arange(It.shape[0]),np.arange(It.shape[1]),It)
 
-    It_rect = rect_It_spline.ev(y_coor,x_coor)
-
     p = np.zeros(2)
     delta_p = np.array((2,))
-    bases = np.reshape((bases.shape[0],-1))
+    B = []
+    for i in range(bases.shape[2]):
+        B.append(bases[:, :, i].flatten())
+    B = np.transpose(np.array(B))
+    B_ = B@B.T
+
+    x = np.arange(x_min, x_max + 0.1)
+    y = np.arange(y_min, y_max + 0.1)
+    X, Y = np.meshgrid(x, y)
+    It_rect = rect_It_spline.ev(Y, X)
+
     while np.sum(delta_p**2) > threshold:
-        x_coor_wrapped = p[0] + x_coor
-        y_coor_wrapped = p[1] + y_coor
-        It1_wrapped = rect_It1_spline.ev(y_coor_wrapped,x_coor_wrapped)
-        b = It_rect.flatten() - It1_wrapped.flatten()
+        x_ = np.arange(x_min + p[0], x_max + 0.5 + p[0])
+        y_ = np.arange(y_min + p[1], y_max + 0.5 + p[1])
+        X_, Y_ = np.meshgrid(x_, y_)
+        It1_rect = rect_It1_spline.ev(Y_, X_)        
+
+        b = It_rect.flatten() - It1_rect.flatten()
+
+        x_gradient = rect_It1_spline.ev(Y_, X_, dx=0, dy=1).flatten()
+        y_gradient = rect_It1_spline.ev(Y_, X_, dx=1, dy=0).flatten()
         
+        A = np.zeros((x_gradient.shape[0], 2))
+        A[:, 0] = x_gradient
+        A[:, 1] = y_gradient
 
-        y_gradient = rect_It1_spline.ev(y_coor_wrapped,x_coor_wrapped,dx = 1,dy = 0).flatten()
-        x_gradient = rect_It1_spline.ev(y_coor_wrapped,x_coor_wrapped,dx = 0,dy=1).flatten()
-
-        A = np.empty((x_gradient.shape[0],2))
-        A[:,0] = x_gradient
-        A[:,1] = y_gradient
-        A = A - bases@bases.T@A
-        b = bases@bases.T@b-b 
+        A = A - B_@A
+        b = b-B_@b 
 
         delta_p = np.linalg.inv(A.T @ A) @ A.T @ b
         p += delta_p
     
     return p
+
     
