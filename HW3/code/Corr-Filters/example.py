@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib import animation
 import matplotlib.patches as patches
-
+import scipy.ndimage
+import cv2
 
 img = np.load('lena.npy')
 
@@ -84,9 +85,44 @@ def animate(i):
                           Y.reshape(dsize), cmap=plt.get_cmap('coolwarm'))
 
         # Place your solution code for question 4.3 here
+        lambda0 = 0
+        S = np.dot(X, X.T)
+        I = np.identity(X.shape[0])
+        inv_S_I = np.linalg.inv(S + (I*lambda0))
+        g0 = np.dot(np.dot(inv_S_I, X), Y)
+        g0 = g0.reshape(29, 45)
+        plt.matshow(g0)
+        plt.savefig("figure0.jpg")
         plt.show()
-        return []
+        
+        out0 = scipy.ndimage.correlate(img, g0)
+        out0 = cv2.normalize(out0, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        cv2.imwrite('correlate0.jpg', out0*255)
 
+        lambda1 = 1
+        S = np.dot(X, X.T)
+        I = np.identity(X.shape[0])
+        inv_S_I = np.linalg.inv(S + (I*lambda1))
+        g1 = np.dot(np.dot(inv_S_I, X), Y)
+        g1 = g1.reshape(29, 45)
+        plt.matshow(g1)
+        plt.savefig("figure1.jpg")
+        plt.show()
+
+        out1 = scipy.ndimage.correlate(img, g1)
+        out1 = cv2.normalize(out1, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        cv2.imwrite('correlate1.jpg', out1*255)
+
+
+        out2 = scipy.ndimage.convolve(img, g0)
+        out2 = cv2.normalize(out2, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        cv2.imwrite('convolve0.jpg', out2*255)
+
+        out3 = scipy.ndimage.convolve(img, g1)
+        out3 = cv2.normalize(out3, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        cv2.imwrite('convolve1.jpg', out3*255)
+
+        return []
 
 # Start the animation
 ani = animation.FuncAnimation(fig, animate, frames=N+1,
