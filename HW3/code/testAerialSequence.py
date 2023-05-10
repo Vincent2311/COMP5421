@@ -11,7 +11,7 @@ import SubtractDominantMotion
 sequence = np.load('../data/aerialseq.npy')
 
 
-for i in range(1,31):
+for i in range(1,sequence.shape[2]):
     It = sequence[:,:,i-1]
     It1 = sequence[:,:,i]
     mask = SubtractDominantMotion.SubtractDominantMotion(It, It1)
@@ -26,4 +26,3 @@ for i in range(1,31):
         cv2.imwrite('q3-3_{}.jpg'.format(i), tmp_img*255)
 
     It = It1
-    print("round ",i)
